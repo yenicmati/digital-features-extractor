@@ -7,10 +7,10 @@ Digital Features Extractor is an LLM-powered tool designed to automatically iden
 A **Digital Feature** is a user-visible capability of a digital product that delivers specific business value. Unlike technical functions or components (e.g., "Database Schema" or "API Endpoint"), a Digital Feature describes what a user can actually *do* (e.g., "One-Click Checkout" or "User Profile Management").
 
 ## Output screenshots
-
+** Extracted digital features list (HTML) **
 <img width="1324" height="716" alt="image" src="https://github.com/user-attachments/assets/1925a006-c608-4590-9286-9e2a5170f061" />
 
-
+** Navigate through graph of functions (HTML) **
 <img width="925" height="668" alt="image" src="https://github.com/user-attachments/assets/42fe42ad-2ae3-4da7-b35d-c4dd0086c3f9" />
 
 
