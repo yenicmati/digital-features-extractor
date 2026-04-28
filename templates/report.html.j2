@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Digital Features Report</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f4f6f9;
+      color: #333;
+      line-height: 1.5;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    header {
+      background: #1a2236;
+      color: #fff;
+      padding: 2rem 2.5rem;
+    }
+    header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: 0.02em; }
+    header .meta { margin-top: 0.4rem; font-size: 0.85rem; color: #94a3b8; }
+    header .meta span + span::before { content: " · "; }
+
+    /* ── Main wrapper ────────────────────────────────────── */
+    main { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    /* ── Summary strip ───────────────────────────────────── */
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1rem 1.4rem;
+      flex: 1 1 140px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+      text-align: center;
+    }
+    .stat-card .value { font-size: 2rem; font-weight: 700; color: #1a2236; }
+    .stat-card .label { font-size: 0.78rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.2rem; }
+
+    /* ── Section title ───────────────────────────────────── */
+    h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: #1a2236; }
+
+    /* ── Feature grid ────────────────────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.2rem;
+    }
+
+    .feature-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 1.2rem 1.4rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.09);
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      border-left: 4px solid #cbd5e1;
+    }
+    .feature-card.high   { border-left-color: #22c55e; }
+    .feature-card.medium { border-left-color: #f59e0b; }
+    .feature-card.low    { border-left-color: #ef4444; }
+
+    .feature-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1a2236;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .confidence-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2em 0.55em;
+      border-radius: 999px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .confidence-badge.high   { background: #dcfce7; color: #15803d; }
+    .confidence-badge.medium { background: #fef3c7; color: #b45309; }
+    .confidence-badge.low    { background: #fee2e2; color: #b91c1c; }
+
+    .feature-card .description { font-size: 0.88rem; color: #475569; }
+
+    .feature-card .user-value {
+      font-size: 0.82rem;
+      color: #334155;
+      font-style: italic;
+      border-left: 2px solid #e2e8f0;
+      padding-left: 0.6rem;
+    }
+
+    .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.2rem; }
+
+    .tag {
+      font-size: 0.73rem;
+      padding: 0.2em 0.6em;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    .tag-capability { background: #ede9fe; color: #5b21b6; }
+
+    .status-badge {
+      font-size: 0.73rem;
+      padding: 0.2em 0.6em;
+      border-radius: 4px;
+      font-weight: 600;
+      display: inline-block;
+    }
+    .status-live        { background: #d1fae5; color: #065f46; }
+    .status-to_be_developed { background: #dbeafe; color: #1e40af; }
+    .status-deprecated  { background: #f3f4f6; color: #6b7280; }
+    .status-to_review   { background: #fef9c3; color: #854d0e; }
+
+    footer {
+      text-align: center;
+      font-size: 0.78rem;
+      color: #94a3b8;
+      padding: 2rem 0 3rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Digital Features Extractor — Report</h1>
+  <div class="meta">
+    {% if source %}<span>Source: <strong>{{ source }}</strong></span>{% endif %}
+    <span>Exported: {{ exported_at }}</span>
+    <span>Features: {{ features | length }}</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- Summary stats -->
+  <div class="summary">
+    <div class="stat-card">
+      <div class="value">{{ features | length }}</div>
+      <div class="label">Total Features</div>
+    </div>
+    <div class="stat-card">
+      <div class="value">{{ avg_confidence }}</div>
+      <div class="label">Avg Confidence</div>
+    </div>
+    {% for status_name, count in status_counts.items() %}
+    <div class="stat-card">
+      <div class="value">{{ count }}</div>
+      <div class="label">{{ status_name }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Feature cards -->
+  <h2>Features</h2>
+  <div class="features-grid">
+    {% for f in features %}
+    {% set conf_class = "high" if f.confidence_score >= 0.7 else ("medium" if f.confidence_score >= 0.4 else "low") %}
+    <div class="feature-card {{ conf_class }}">
+      <h3>
+        {{ f.name }}
+        <span class="confidence-badge {{ conf_class }}">{{ "%.0f"|format(f.confidence_score * 100) }}%</span>
+      </h3>
+      <p class="description">{{ f.description }}</p>
+      {% if f.user_value is defined and f.user_value %}
+      <p class="user-value">{{ f.user_value }}</p>
+      {% endif %}
+      <div class="tags">
+        {% if f.business_capability_hint %}
+        <span class="tag tag-capability">{{ f.business_capability_hint }}</span>
+        {% endif %}
+        <span class="status-badge status-{{ f.status.value | lower | replace(' ', '_') }}">{{ f.status.value }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</main>
+
+<footer>Generated by Digital Features Extractor</footer>
+
+</body>
+</html>
