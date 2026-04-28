@@ -36,7 +36,29 @@ def test_digital_feature_confidence_bounds():
     with pytest.raises(ValidationError):
         DigitalFeature(
             id="x", name="X", description="d", parent_product="p",
-            entry_points=[], confidence_score=1.5
+            entry_points=[], confidence_score=-0.1
+        )
+
+
+def test_digital_feature_extra_fields_forbidden():
+    with pytest.raises(ValidationError):
+        DigitalFeature(
+            id="x",
+            name="X",
+            description="d",
+            parent_product="p",
+            entry_points=[],
+            unexpected="value",
+        )
+
+
+def test_extraction_result_negative_cluster_count():
+    with pytest.raises(ValidationError):
+        ExtractionResult(
+            source="https://github.com/org/repo",
+            features=[],
+            total_clusters=-1,
+            skipped_clusters=0,
         )
 
 
