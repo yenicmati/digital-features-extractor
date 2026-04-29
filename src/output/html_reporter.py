@@ -5,7 +5,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from src.extraction.models import ExtractionResult, FeatureStatus
+from src.extraction.models import ExtractionResult, FeatureStatus, GroupingResult
 
 _DEFAULT_TEMPLATE_DIR = Path(__file__).parent.parent.parent / "templates"
 
@@ -23,6 +23,7 @@ class HtmlReporter:
         result: ExtractionResult,
         output_path: Path,
         source: str = "",
+        grouping: GroupingResult | None = None,
     ) -> None:
         template = self._env.get_template("report.html.j2")
 
@@ -50,6 +51,7 @@ class HtmlReporter:
             exported_at=exported_at,
             avg_confidence=avg_confidence,
             status_counts=status_counts,
+            grouping=grouping,
         )
 
         output_path.parent.mkdir(parents=True, exist_ok=True)

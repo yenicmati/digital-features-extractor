@@ -129,6 +129,19 @@
       color: #94a3b8;
       padding: 2rem 0 3rem;
     }
+
+    .business-features { margin: 2rem 0; }
+    .business-features h2 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .business-features .subtitle { color: #6b7280; margin-bottom: 1.5rem; }
+    .bf-card { background: #fff; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .bf-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .bf-header h3 { margin: 0; font-size: 1.1rem; }
+    .bf-count { background: #eff6ff; color: #3b82f6; padding: 2px 10px; border-radius: 12px; font-size: .85rem; }
+    .bf-description { color: #374151; margin-bottom: 0.75rem; font-size: .95rem; }
+    .bf-features { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .bf-features li { display: flex; align-items: center; gap: 0.4rem; background: #f9fafb; border-radius: 6px; padding: 4px 10px; font-size: .875rem; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .score { color: #9ca3af; font-size: .8rem; }
   </style>
 </head>
 <body>
@@ -161,6 +174,31 @@
     </div>
     {% endfor %}
   </div>
+
+  {% if grouping and grouping.business_features %}
+  <section class="business-features">
+    <h2>Business Features</h2>
+    <p class="subtitle">{{ grouping.business_features|length }} capability groups identified</p>
+    {% for bf in grouping.business_features %}
+    <div class="bf-card">
+      <div class="bf-header">
+        <h3>{{ bf.name }}</h3>
+        <span class="bf-count">{{ bf.digital_features|length }} features</span>
+      </div>
+      <p class="bf-description">{{ bf.description }}</p>
+      <ul class="bf-features">
+        {% for f in bf.digital_features %}
+        <li>
+          <span class="dot" style="background:{{ '#22c55e' if f.confidence_score >= 0.7 else '#f59e0b' }}"></span>
+          {{ f.name }}
+          <span class="score">{{ (f.confidence_score * 100)|int }}%</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
 
   <!-- Feature cards -->
   <h2>Features</h2>

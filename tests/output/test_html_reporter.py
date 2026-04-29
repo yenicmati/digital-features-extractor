@@ -81,3 +81,17 @@ def test_valid_html_structure(sample_result: ExtractionResult, tmp_path: Path) -
     assert "<html" in content
     assert "<head" in content
     assert "<body" in content
+
+
+def test_report_shows_business_features(tmp_path):
+    from src.extraction.models import BusinessFeature, DigitalFeature, ExtractionResult, GroupingResult
+    from src.output.html_reporter import HtmlReporter
+    f1 = DigitalFeature(id="f1", name="Find spots", description="User can find nearby spots", parent_product="p", entry_points=[], confidence_score=0.9)
+    result = ExtractionResult(source="./repo", features=[f1], total_clusters=2, skipped_clusters=0)
+    bf = BusinessFeature(id="bf1", name="Spot Discovery", description="Explore sport spots", digital_features=[f1])
+    grouping = GroupingResult(source="./repo", business_features=[bf], ungrouped_feature_ids=[])
+    out = tmp_path / "report.html"
+    HtmlReporter().export(result, out, source="./repo", grouping=grouping)
+    html = out.read_text()
+    assert "Spot Discovery" in html
+    assert "Explore sport spots" in html
