@@ -5,7 +5,7 @@ from pathlib import Path
 
 import click
 
-from src.extraction import FeatureExtractor
+from src.extraction import FeatureExtractor, FeatureGrouper
 from src.graph import GraphifyWrapper
 from src.ingestion import GithubIngester, LocalIngester
 from src.output import GraphVisualizer, HtmlReporter, JsonExporter
@@ -105,15 +105,18 @@ def analyze(
     extractor = FeatureExtractor(llm_client, model, cache_path)
     result = extractor.extract(clusters, graph, source=source)
 
+    grouper = FeatureGrouper(llm_client, model)
+    grouping = grouper.group(result)
+
     out.mkdir(parents=True, exist_ok=True)
 
-    JsonExporter().export(result, out / "features.json")
-    HtmlReporter().export(result, out / "report.html", source=source)
+    JsonExporter().export(result, out / "features.json", grouping=grouping)
+    HtmlReporter().export(result, out / "report.html", source=source, grouping=grouping)
     GraphVisualizer().export(graph, result.features, out / "graph.html")
 
     if verbose:
         click.echo(f"  → Output written to {out}/")
 
     click.echo(
-        f"✓ Found {len(result.features)} features in {result.total_clusters} clusters"
+        f"✓ Found {len(result.features)} features in {result.total_clusters} clusters → {len(grouping.business_features)} business feature groups"
     )

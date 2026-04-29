@@ -95,3 +95,29 @@ def test_analyze_valid_local_dir(runner: CliRunner, tmp_path: Path) -> None:
     mock_json_exp.export.assert_called_once()
     mock_html_rep.export.assert_called_once()
     mock_graph_vis.export.assert_called_once()
+
+
+def test_analyze_calls_feature_grouper(tmp_path):
+    from click.testing import CliRunner
+    from unittest.mock import MagicMock, patch
+    from src.cli import cli
+    runner = CliRunner()
+    source_dir = tmp_path / "src"
+    source_dir.mkdir()
+    (source_dir / "main.py").write_text("def hello(): pass")
+    with patch("src.cli.LocalIngester") as mock_ing, \
+         patch("src.cli.GraphifyWrapper") as mock_gw, \
+         patch("src.cli.FeatureExtractor") as mock_fe, \
+         patch("src.cli.FeatureGrouper") as mock_fg, \
+         patch("src.cli.JsonExporter") as mock_je, \
+         patch("src.cli.HtmlReporter") as mock_hr, \
+         patch("src.cli.GraphVisualizer") as mock_gv, \
+         patch("openai.OpenAI"):
+        mock_ing.return_value.ingest.return_value = [source_dir / "main.py"]
+        mock_gw.return_value.build_graph.return_value = MagicMock()
+        mock_gw.return_value.get_clusters.return_value = {}
+        mock_fe.return_value.extract.return_value = MagicMock(features=[], total_clusters=0, skipped_clusters=0)
+        mock_fg.return_value.group.return_value = MagicMock(business_features=[], ungrouped_feature_ids=[])
+        result = runner.invoke(cli, ["analyze", "--source", str(source_dir), "--api-key", "test-key", "--output-dir", str(tmp_path / "out")])
+        assert result.exit_code == 0
+        mock_fg.return_value.group.assert_called_once()
