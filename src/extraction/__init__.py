@@ -1,4 +1,5 @@
 from .extractor import FeatureExtractor
-from .models import DigitalFeature, ExtractionResult, FeatureStatus
+from .grouper import FeatureGrouper
+from .models import BusinessFeature, DigitalFeature, ExtractionResult, FeatureStatus, GroupingResult
 
-__all__ = ["DigitalFeature", "ExtractionResult", "FeatureExtractor", "FeatureStatus"]
+__all__ = ["FeatureExtractor", "FeatureGrouper", "BusinessFeature", "DigitalFeature", "ExtractionResult", "FeatureStatus", "GroupingResult"]
