@@ -90,3 +90,19 @@ def test_correct_structure(tmp_path: Path) -> None:
     assert len(data["features"]) == 3
     first = data["features"][0]
     assert first["id"] == "f2"
+
+
+def test_export_with_grouping_result(tmp_path):
+    import json
+    from src.extraction.models import BusinessFeature, DigitalFeature, ExtractionResult, GroupingResult
+    from src.output.json_exporter import JsonExporter
+    f1 = DigitalFeature(id="f1", name="Find spots", description="desc", parent_product="p", entry_points=[], confidence_score=0.9)
+    result = ExtractionResult(source="./repo", features=[f1], total_clusters=2, skipped_clusters=0)
+    bf = BusinessFeature(id="bf1", name="Spot Discovery", description="desc", digital_features=[f1])
+    grouping = GroupingResult(source="./repo", business_features=[bf], ungrouped_feature_ids=[])
+    out = tmp_path / "features.json"
+    JsonExporter().export(result, out, grouping=grouping)
+    data = json.loads(out.read_text())
+    assert "business_features" in data
+    assert data["business_features"][0]["name"] == "Spot Discovery"
+    assert len(data["business_features"][0]["digital_features"]) == 1
