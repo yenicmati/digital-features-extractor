@@ -30,3 +30,20 @@ class ExtractionResult(BaseModel):
     features: list[DigitalFeature]
     total_clusters: int = Field(ge=0)
     skipped_clusters: int = Field(ge=0)
+
+
+class BusinessFeature(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    name: str
+    description: str
+    digital_features: list[DigitalFeature]
+
+
+class GroupingResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source: str
+    business_features: list[BusinessFeature]
+    ungrouped_feature_ids: list[str]
