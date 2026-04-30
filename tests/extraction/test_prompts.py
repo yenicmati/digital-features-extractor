@@ -60,6 +60,26 @@ def test_parse_llm_response_raises_value_error_on_invalid_json():
         parse_llm_response("this is not json at all")
 
 
+def test_build_cluster_prompt_includes_file_content_when_present():
+    nodes = [
+        {
+            "name": "Dashboard",
+            "type": "component",
+            "path": "src/Dashboard.vue",
+            "content": "<template>\n  <div class='dashboard'>Milestones</div>\n</template>",
+        }
+    ]
+    prompt = build_cluster_prompt("cluster-10", nodes)
+    assert "Milestones" in prompt
+    assert "Dashboard" in prompt
+
+
+def test_build_cluster_prompt_omits_code_block_when_no_content():
+    nodes = [{"name": "Foo", "type": "function", "path": "foo.py"}]
+    prompt = build_cluster_prompt("cluster-x", nodes)
+    assert "```" not in prompt
+
+
 def test_build_summary_prompt_contains_features():
     features = [{"name": "Track delivery", "description": "User tracks their package"}]
     prompt = build_summary_prompt(features)

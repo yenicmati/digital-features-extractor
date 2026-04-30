@@ -6,7 +6,7 @@ import pathspec
 
 class BaseIngester(ABC):
     supported_extensions: frozenset[str] = frozenset(
-        {".py", ".ts", ".tsx", ".js", ".jsx", ".java", ".kt"}
+        {".py", ".ts", ".tsx", ".js", ".jsx", ".java", ".kt", ".vue"}
     )
 
     @property

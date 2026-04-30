@@ -94,15 +94,38 @@ class FeatureExtractor:
         skipped_clusters = 0
         total_clusters = len(clusters)
 
+        micro_nodes: list[str] = []
+        clusters_to_process: dict[str, list[str]] = {}
         for cluster_id, node_names in clusters.items():
+            if len(node_names) <= 2:
+                micro_nodes.extend(node_names)
+            else:
+                clusters_to_process[cluster_id] = node_names
+        if micro_nodes:
+            clusters_to_process["__micro_merged__"] = micro_nodes
+
+        for cluster_id, node_names in clusters_to_process.items():
             nodes = []
             for name in node_names:
                 attrs = graph.nodes.get(name, {})
+                path_str = attrs.get("path", "")
+                content: str | None = None
+                if path_str:
+                    try:
+                        file_path = Path(path_str)
+                        if file_path.exists():
+                            raw_lines = file_path.read_text(
+                                encoding="utf-8", errors="ignore"
+                            ).splitlines()[:60]
+                            content = "\n".join(raw_lines)
+                    except Exception:
+                        pass
                 nodes.append(
                     {
                         "name": name,
                         "type": attrs.get("type", "unknown"),
-                        "path": attrs.get("path", ""),
+                        "path": path_str,
+                        "content": content,
                     }
                 )
 

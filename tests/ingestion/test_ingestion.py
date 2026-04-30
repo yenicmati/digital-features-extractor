@@ -31,6 +31,17 @@ def test_local_ingester_returns_supported_files(temp_repo):
     assert len(result) == 3
 
 
+def test_local_ingester_includes_vue_files(temp_repo):
+    (temp_repo / "App.vue").write_text("<template><div/></template>")
+    (temp_repo / "main.ts").write_text("import App from './App.vue'")
+
+    result = LocalIngester().ingest(str(temp_repo))
+    suffixes = {f.suffix for f in result}
+
+    assert ".vue" in suffixes
+    assert ".ts" in suffixes
+
+
 def test_local_ingester_raises_on_nonexistent_path():
     with pytest.raises(ValueError, match="does not exist"):
         LocalIngester().ingest("/nonexistent/path/that/does/not/exist")

@@ -71,7 +71,7 @@ def test_cache_miss_calls_llm(tmp_path: Path):
 
 
 def test_cache_hit_skips_llm(tmp_path: Path):
-    (tmp_path / "cluster_0.json").write_text(VALID_RESPONSE, encoding="utf-8")
+    (tmp_path / "__micro_merged__.json").write_text(VALID_RESPONSE, encoding="utf-8")
     (tmp_path / "__summary__.json").write_text(VALID_RESPONSE, encoding="utf-8")
 
     client = make_llm_client(VALID_RESPONSE)
@@ -102,8 +102,8 @@ def test_cache_written_on_miss(tmp_path: Path):
     extractor = FeatureExtractor(llm_client=client, model="gpt-4o", cache_dir=tmp_path)
     extractor.extract(make_clusters(), make_graph(), source="test")
 
-    assert (tmp_path / "cluster_0.json").exists()
-    cached = (tmp_path / "cluster_0.json").read_text(encoding="utf-8")
+    assert (tmp_path / "__micro_merged__.json").exists()
+    cached = (tmp_path / "__micro_merged__.json").read_text(encoding="utf-8")
     assert cached == VALID_RESPONSE
 
 
@@ -119,3 +119,18 @@ def test_multiple_clusters_total_count():
     result = extractor.extract(clusters, g, source="test")
 
     assert result.total_clusters == 2
+
+
+def test_micro_clusters_merged_reduces_llm_calls():
+    client = make_llm_client(VALID_RESPONSE)
+    g = nx.Graph()
+    for i in range(5):
+        g.add_node(f"Node{i}", type="function", path=f"src/mod{i}.py")
+    clusters = {f"cluster_{i}": [f"Node{i}"] for i in range(5)}
+
+    extractor = FeatureExtractor(llm_client=client, model="gpt-4o")
+    result = extractor.extract(clusters, g, source="test")
+
+    assert result.total_clusters == 5
+    call_count = client.chat.completions.create.call_count
+    assert call_count < 5 + 1

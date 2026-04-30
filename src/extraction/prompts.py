@@ -42,18 +42,29 @@ def build_cluster_prompt(cluster_id: str, nodes: list[dict]) -> str:
 
     Args:
         cluster_id: Identifier for the cluster being analyzed.
-        nodes: List of node dicts, each with 'name', 'type', and 'path' keys.
+        nodes: List of node dicts, each with 'name', 'type', 'path', and optional 'content' keys.
+            When 'content' is present, the first lines of the file are included in the prompt
+            so the LLM can reason from actual code rather than just symbol names.
 
     Returns:
         Prompt string requesting a JSON array of Digital Feature objects.
     """
-    node_lines = "\n".join(
-        f"  - [{node.get('type', 'unknown')}] {node.get('name', '')}  ({node.get('path', '')})"
-        for node in nodes
-    )
+    node_sections = []
+    for node in nodes:
+        header = (
+            f"  - [{node.get('type', 'unknown')}] {node.get('name', '')}  "
+            f"({node.get('path', '')})"
+        )
+        content = node.get("content")
+        if content:
+            node_sections.append(f"{header}\n    ```\n{content}\n    ```")
+        else:
+            node_sections.append(header)
+
+    node_block = "\n".join(node_sections)
     return (
         f"Analyze the following code cluster (id: {cluster_id}) and identify Digital Features.\n\n"
-        f"Code nodes in this cluster:\n{node_lines}\n\n"
+        f"Code nodes in this cluster:\n{node_block}\n\n"
         "Identify only meaningful user-facing capabilities with real business value.\n"
         "Skip: loading screens, navigation bars, session handling, generic 'view X' screens, "
         "technical utilities, error states.\n"
