@@ -10,3 +10,9 @@ build/
 .mypy_cache/
 dfe-output/
 dfe-cache/
+
+# opencode / superpowers generated files
+docs/superpowers/
+.sisyphus/
+AGENTS.md
+CLAUDE.md
