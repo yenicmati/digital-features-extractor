@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +16,12 @@ except Exception:
     _GRAPHIFY_AVAILABLE = False
 
 
+_TS_IMPORT_RE = re.compile(
+    r"""(?:import|export)\s+.*?from\s+['\"](\./[^'\"]+)['\"]""",
+    re.DOTALL,
+)
+
+
 def _fallback_extract(files: list[Path]) -> dict:
     nodes: list[dict] = []
     edges: list[dict] = []
@@ -23,40 +30,56 @@ def _fallback_extract(files: list[Path]) -> dict:
     def _file_id(p: Path) -> str:
         return p.stem.replace("-", "_").lower()
 
+    def _resolve_ts_import(raw: str, all_files: list[Path]) -> Path | None:
+        stem = raw.lstrip("./").split("/")[-1]
+        stem_no_ext = stem.rsplit(".", 1)[0] if "." in stem else stem
+        return next((p for p in all_files if p.stem.lower() == stem_no_ext.lower()), None)
+
+    def _extract_script_block(text: str) -> str:
+        m = re.search(r"<script[^>]*>(.*?)</script>", text, re.DOTALL | re.IGNORECASE)
+        return m.group(1) if m else text
+
     for f in files:
         fid = _file_id(f)
         file_ids[f] = fid
         nodes.append({"id": fid, "type": "file", "name": f.name, "source_file": str(f)})
 
     for f in files:
-        if f.suffix != ".py":
-            continue
-        try:
-            tree = ast.parse(f.read_text(encoding="utf-8"), filename=str(f))
-        except SyntaxError:
-            continue
         fid = file_ids[f]
-        for node in ast.walk(tree):
-            if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
-                nid = f"{fid}_{node.name.lower()}"
-                ntype = "class" if isinstance(node, ast.ClassDef) else "function"
-                nodes.append({"id": nid, "type": ntype, "name": node.name, "source_file": str(f)})
-                edges.append({"source": fid, "target": nid, "type": "contains"})
-            elif isinstance(node, (ast.Import, ast.ImportFrom)):
-                names = (
-                    [alias.name for alias in node.names]
-                    if isinstance(node, ast.Import)
-                    else ([node.module] if node.module else [])
-                )
-                for name in names:
-                    mod_stem = name.split(".")[-1].lower()
-                    target_file = next(
-                        (p for p in files if p.stem.lower() == mod_stem), None
+        try:
+            text = f.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+
+        if f.suffix == ".py":
+            try:
+                tree = ast.parse(text, filename=str(f))
+            except SyntaxError:
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+                    nid = f"{fid}_{node.name.lower()}"
+                    ntype = "class" if isinstance(node, ast.ClassDef) else "function"
+                    nodes.append({"id": nid, "type": ntype, "name": node.name, "source_file": str(f)})
+                    edges.append({"source": fid, "target": nid, "type": "contains"})
+                elif isinstance(node, (ast.Import, ast.ImportFrom)):
+                    names = (
+                        [alias.name for alias in node.names]
+                        if isinstance(node, ast.Import)
+                        else ([node.module] if node.module else [])
                     )
-                    if target_file:
-                        edges.append(
-                            {"source": fid, "target": file_ids[target_file], "type": "imports"}
-                        )
+                    for name in names:
+                        mod_stem = name.split(".")[-1].lower()
+                        target_file = next((p for p in files if p.stem.lower() == mod_stem), None)
+                        if target_file:
+                            edges.append({"source": fid, "target": file_ids[target_file], "type": "imports"})
+
+        elif f.suffix in {".ts", ".tsx", ".js", ".jsx", ".vue"}:
+            body = _extract_script_block(text) if f.suffix == ".vue" else text
+            for match in _TS_IMPORT_RE.finditer(body):
+                target_file = _resolve_ts_import(match.group(1), files)
+                if target_file and target_file != f:
+                    edges.append({"source": fid, "target": file_ids[target_file], "type": "imports"})
 
     return {"nodes": nodes, "edges": edges}
 
@@ -87,7 +110,14 @@ class GraphifyWrapper:
         if _GRAPHIFY_AVAILABLE:
             try:
                 extraction = _gfy_extract(files)
-                return _gfy_build(extraction)
+                graph = _gfy_build(extraction)
+                for edge in _fallback_extract(files).get("edges", []):
+                    if edge.get("type") != "imports":
+                        continue
+                    src, tgt = edge.get("source"), edge.get("target")
+                    if src and tgt and src in graph and tgt in graph and not graph.has_edge(src, tgt):
+                        graph.add_edge(src, tgt, type="imports")
+                return graph
             except Exception:
                 pass
         extraction = _fallback_extract(files)

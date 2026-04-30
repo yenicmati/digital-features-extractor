@@ -2,6 +2,7 @@
 
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Any
 
@@ -10,8 +11,11 @@ from pydantic import ValidationError
 
 from .models import DigitalFeature, ExtractionResult
 from .prompts import (
+    PREFILTER_SYSTEM_PROMPT,
     SYSTEM_PROMPT,
     build_cluster_prompt,
+    build_prefilter_prompt,
+    build_routes_prompt,
     build_summary_prompt,
     parse_llm_response,
 )
@@ -65,7 +69,6 @@ class FeatureExtractor:
             path.write_text(content, encoding="utf-8")
 
     def _get_llm_response(self, key: str, messages: list[dict]) -> str:
-        """Return cached response or call LLM and cache the result."""
         cached = self._load_cache(key)
         if cached is not None:
             logger.debug("Cache hit for key=%s", key)
@@ -74,11 +77,81 @@ class FeatureExtractor:
         self._save_cache(key, content)
         return content
 
+    _VUE_TEMPLATE_RE = re.compile(
+        r"<template[^>]*>(.*?)</template>", re.DOTALL | re.IGNORECASE
+    )
+    _VUE_SCRIPT_RE = re.compile(
+        r"<script[^>]*>(.*?)</script>", re.DOTALL | re.IGNORECASE
+    )
+
+    def _extract_file_content(self, file_path: Path) -> str | None:
+        try:
+            text = file_path.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            return None
+
+        if file_path.suffix == ".vue":
+            parts: list[str] = []
+            tm = self._VUE_TEMPLATE_RE.search(text)
+            if tm:
+                parts.append("[template]\n" + tm.group(1).strip()[:800])
+            sm = self._VUE_SCRIPT_RE.search(text)
+            if sm:
+                parts.append("[script]\n" + "\n".join(sm.group(1).strip().splitlines()[:30]))
+            return "\n\n".join(parts) if parts else "\n".join(text.splitlines()[:60])
+
+        return "\n".join(text.splitlines()[:60])
+
+    _ROUTER_FILE_STEMS = frozenset({
+        "router", "routes", "index", "app-routing.module",
+        "app.router", "routing",
+    })
+    _ROUTE_PATH_RE = re.compile(r"""path\s*:\s*['"]([^'"]+)['"]""")
+    _ROUTE_NAME_RE = re.compile(r"""name\s*:\s*['"]([^'"]+)['"]""")
+    _PREFILTER_MIN_CLUSTERS = 6
+
+    def _extract_routes_from_files(self, files: list[Path]) -> list[dict]:
+        router_files = [
+            f for f in files
+            if f.stem.lower().replace("-", "").replace(".", "") in {
+                n.replace("-", "").replace(".", "") for n in self._ROUTER_FILE_STEMS
+            }
+            and f.suffix in {".ts", ".js", ".vue"}
+        ]
+        routes: list[dict] = []
+        for rf in router_files:
+            try:
+                text = rf.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            paths = self._ROUTE_PATH_RE.findall(text)
+            names = self._ROUTE_NAME_RE.findall(text)
+            for i, path in enumerate(paths):
+                routes.append({"path": path, "name": names[i] if i < len(names) else path.strip("/")})
+        return routes
+
+    def _prefilter_clusters(self, summaries: dict[str, str]) -> list[str]:
+        prompt = build_prefilter_prompt(summaries)
+        messages = [
+            {"role": "system", "content": PREFILTER_SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ]
+        try:
+            raw = self._get_llm_response("__prefilter__", messages)
+            parsed = parse_llm_response(raw)
+            if isinstance(parsed, list) and all(isinstance(x, str) for x in parsed):
+                return parsed
+            return list(summaries.keys())
+        except Exception:
+            return list(summaries.keys())
+
     def extract(
         self,
         clusters: dict[str, list[str]],
         graph: nx.Graph,
         source: str = "unknown",
+        project_context: str | None = None,
+        files: list[Path] | None = None,
     ) -> ExtractionResult:
         """Extract DigitalFeature objects from graph clusters using LLM.
 
@@ -94,6 +167,10 @@ class FeatureExtractor:
         skipped_clusters = 0
         total_clusters = len(clusters)
 
+        system_content = SYSTEM_PROMPT
+        if project_context:
+            system_content = f"{SYSTEM_PROMPT}\n\n{project_context}"
+
         micro_nodes: list[str] = []
         clusters_to_process: dict[str, list[str]] = {}
         for cluster_id, node_names in clusters.items():
@@ -104,6 +181,15 @@ class FeatureExtractor:
         if micro_nodes:
             clusters_to_process["__micro_merged__"] = micro_nodes
 
+        if len(clusters_to_process) >= self._PREFILTER_MIN_CLUSTERS:
+            cluster_summaries = {
+                cid: ", ".join(node_names[:5])
+                for cid, node_names in clusters_to_process.items()
+            }
+            kept_ids = self._prefilter_clusters(cluster_summaries)
+            clusters_to_process = {k: v for k, v in clusters_to_process.items() if k in kept_ids}
+            logger.debug("Pre-filter: kept %d / %d clusters", len(clusters_to_process), len(cluster_summaries))
+
         for cluster_id, node_names in clusters_to_process.items():
             nodes = []
             for name in node_names:
@@ -111,15 +197,9 @@ class FeatureExtractor:
                 path_str = attrs.get("path", "")
                 content: str | None = None
                 if path_str:
-                    try:
-                        file_path = Path(path_str)
-                        if file_path.exists():
-                            raw_lines = file_path.read_text(
-                                encoding="utf-8", errors="ignore"
-                            ).splitlines()[:60]
-                            content = "\n".join(raw_lines)
-                    except Exception:
-                        pass
+                    fp = Path(path_str)
+                    if fp.exists():
+                        content = self._extract_file_content(fp)
                 nodes.append(
                     {
                         "name": name,
@@ -131,7 +211,7 @@ class FeatureExtractor:
 
             user_prompt = build_cluster_prompt(cluster_id, nodes)
             messages = [
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": system_content},
                 {"role": "user", "content": user_prompt},
             ]
 
@@ -167,7 +247,35 @@ class FeatureExtractor:
                     )
                     skipped_clusters += 1
 
-        final_features = self._deduplicate(all_raw_features, skipped_clusters)
+        final_features = self._deduplicate(all_raw_features, skipped_clusters, system_content)
+
+        routes = self._extract_routes_from_files(files) if files else []
+        if routes:
+            routes_messages = [
+                {"role": "system", "content": system_content},
+                {"role": "user", "content": build_routes_prompt(routes)},
+            ]
+            try:
+                raw_text = self._get_llm_response("__routes__", routes_messages)
+                route_dicts = parse_llm_response(raw_text)
+                route_features: list[DigitalFeature] = []
+                for i, fdict in enumerate(route_dicts):
+                    try:
+                        route_features.append(DigitalFeature(
+                            id=f"route_{i}_{fdict.get('name', 'unknown')[:40]}".replace(" ", "_"),
+                            name=fdict.get("name", ""),
+                            description=fdict.get("description", ""),
+                            parent_product="routes",
+                            entry_points=[],
+                            business_capability_hint=fdict.get("business_capability_hint"),
+                            confidence_score=fdict.get("confidence_score", 0.0),
+                        ))
+                    except (ValidationError, Exception):
+                        pass
+                existing_names = {f.name.lower() for f in final_features}
+                final_features.extend(f for f in route_features if f.name.lower() not in existing_names)
+            except Exception as exc:
+                logger.warning("Route feature extraction failed: %s", exc)
 
         return ExtractionResult(
             source=source,
@@ -177,7 +285,7 @@ class FeatureExtractor:
         )
 
     def _deduplicate(
-        self, raw_features: list[dict], skipped_clusters: int
+        self, raw_features: list[dict], skipped_clusters: int, system_content: str = SYSTEM_PROMPT
     ) -> list[DigitalFeature]:
         """Run a single LLM call to deduplicate extracted features.
 
@@ -193,7 +301,7 @@ class FeatureExtractor:
 
         summary_prompt = build_summary_prompt(clean_features)
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_content},
             {"role": "user", "content": summary_prompt},
         ]
 

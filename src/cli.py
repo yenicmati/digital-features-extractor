@@ -40,6 +40,35 @@ def _build_llm_client(provider: str, api_key: str | None, base_url: str | None =
         raise click.ClickException(f"Unknown provider: {provider}")
 
 
+def _detect_project_context(root: Path) -> str | None:
+    import json as _json
+
+    name: str | None = None
+    description: str | None = None
+    readme_text: str = ""
+
+    pkg = root / "package.json"
+    if pkg.exists():
+        try:
+            data = _json.loads(pkg.read_text(encoding="utf-8", errors="ignore"))
+            name = data.get("name")
+            description = data.get("description")
+        except Exception:
+            pass
+
+    for readme_name in ("README.md", "readme.md", "README.rst", "README"):
+        readme_file = root / readme_name
+        if readme_file.exists():
+            readme_text = readme_file.read_text(encoding="utf-8", errors="ignore")
+            break
+
+    if not name and not description and not readme_text:
+        return None
+
+    from src.extraction.prompts import build_project_context_block
+    return build_project_context_block(name or root.name, description or "", readme_text)
+
+
 @click.group()
 def cli() -> None:
     pass
@@ -86,6 +115,12 @@ def analyze(
     except (ValueError, Exception) as exc:
         raise click.ClickException(str(exc)) from exc
 
+    if _is_github_source(source):
+        project_root = Path(ingester.temp_dir) if hasattr(ingester, "temp_dir") and ingester.temp_dir else None
+    else:
+        project_root = Path(source)
+    project_context = _detect_project_context(project_root) if project_root else None
+
     if verbose:
         click.echo(f"  → {len(files)} files ingested")
 
@@ -103,7 +138,7 @@ def analyze(
     if verbose:
         click.echo("Extracting digital features via LLM…")
     extractor = FeatureExtractor(llm_client, model, cache_path)
-    result = extractor.extract(clusters, graph, source=source)
+    result = extractor.extract(clusters, graph, source=source, project_context=project_context, files=files)
 
     grouper = FeatureGrouper(llm_client, model)
     grouping = grouper.group(result)

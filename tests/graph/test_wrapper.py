@@ -73,3 +73,44 @@ def test_to_dict_is_json_serialisable(two_linked_files):
 
     serialised = json.dumps(result)
     assert len(serialised) > 0
+
+
+@pytest.fixture()
+def ts_repo(tmp_path):
+    (tmp_path / "Dashboard.vue").write_text(
+        "<script setup>\nimport { useMilestones } from './useMilestones'\n</script>\n<template><div/></template>"
+    )
+    (tmp_path / "useMilestones.ts").write_text(
+        "export function useMilestones() { return [] }"
+    )
+    (tmp_path / "utils.ts").write_text("export const PI = 3.14")
+    return tmp_path
+
+
+def test_ts_import_creates_edge(ts_repo):
+    files = list(ts_repo.glob("*"))
+    wrapper = GraphifyWrapper()
+    graph = wrapper.build_graph(files)
+    assert any("dashboard" in n.lower() for n in graph.nodes())
+    assert any("usemilestones" in n.lower() for n in graph.nodes())
+    edge_types = [data.get("type") for _, _, data in graph.edges(data=True)]
+    assert "imports" in edge_types
+
+
+def test_vue_without_imports_has_no_import_edges(tmp_path):
+    (tmp_path / "Standalone.vue").write_text("<template><div>Hello</div></template>")
+    files = list(tmp_path.glob("*.vue"))
+    wrapper = GraphifyWrapper()
+    graph = wrapper.build_graph(files)
+    edge_types = [data.get("type") for _, _, data in graph.edges(data=True)]
+    assert "imports" not in edge_types
+
+
+def test_js_import_creates_edge(tmp_path):
+    (tmp_path / "app.js").write_text("import { helper } from './helper'")
+    (tmp_path / "helper.js").write_text("export function helper() {}")
+    files = list(tmp_path.glob("*.js"))
+    wrapper = GraphifyWrapper()
+    graph = wrapper.build_graph(files)
+    edge_types = [data.get("type") for _, _, data in graph.edges(data=True)]
+    assert "imports" in edge_types

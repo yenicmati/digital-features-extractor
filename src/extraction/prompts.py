@@ -139,3 +139,52 @@ def parse_llm_response(response: str) -> list[dict]:
         )
 
     return parsed
+
+
+def build_project_context_block(
+    name: str,
+    description: str,
+    readme_excerpt: str,
+) -> str:
+    readme_trimmed = readme_excerpt.strip()[:600]
+    return (
+        f"[Project context]\n"
+        f"Name: {name}\n"
+        f"Description: {description}\n"
+        f"README excerpt:\n{readme_trimmed}"
+    )
+
+
+PREFILTER_SYSTEM_PROMPT = """You are filtering code clusters to find those containing user-facing features.
+
+Return a JSON array of cluster_id strings — only clusters that contain UI components, pages, user interactions, or business logic visible to end users.
+
+EXCLUDE clusters that are purely: HTTP utilities, config files, type definitions, test helpers, error handlers, API clients, database models, generic utilities.
+
+Return ONLY a JSON array of strings. Example: ["cluster_2", "cluster_5"]"""
+
+
+def build_routes_prompt(routes: list[dict]) -> str:
+    route_lines = "\n".join(
+        f"  - {r.get('path', '?')}  (name: {r.get('name', 'unknown')})"
+        for r in routes
+    )
+    return (
+        "The following application routes were detected. Each route likely corresponds to a "
+        "user-facing screen or feature. Use them as high-confidence candidates when identifying "
+        "Digital Features.\n\n"
+        f"Routes:\n{route_lines}\n\n"
+        "For each route that corresponds to a meaningful user capability, include it in the "
+        "feature list with confidence ≥ 0.8 unless the name clearly indicates a technical or "
+        "auth-only page (e.g. /callback, /health, /404)."
+    )
+
+
+def build_prefilter_prompt(summaries: dict[str, str]) -> str:
+    lines = "\n".join(f"  {cid}: {desc}" for cid, desc in summaries.items())
+    return (
+        "Given the following code clusters and their one-line descriptions, return the IDs of "
+        "clusters that are worth analyzing for user-facing Digital Features.\n\n"
+        f"Clusters:\n{lines}\n\n"
+        "Return ONLY a JSON array of cluster_id strings to keep."
+    )

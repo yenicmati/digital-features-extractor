@@ -84,3 +84,38 @@ def test_build_summary_prompt_contains_features():
     features = [{"name": "Track delivery", "description": "User tracks their package"}]
     prompt = build_summary_prompt(features)
     assert "Track delivery" in prompt
+
+
+from src.extraction.prompts import build_project_context_block
+
+
+def test_build_project_context_block_contains_name_and_description():
+    block = build_project_context_block("debt-viewer", "Tool for visualizing technical debt", "## Overview\nThis app shows...")
+    assert "debt-viewer" in block
+    assert "technical debt" in block
+
+
+def test_build_project_context_block_truncates_readme():
+    long_readme = "x" * 2000
+    block = build_project_context_block("app", "desc", long_readme)
+    assert len(block) < 2000
+
+
+from src.extraction.prompts import build_routes_prompt, build_prefilter_prompt
+
+
+def test_build_routes_prompt_lists_paths():
+    routes = [
+        {"path": "/dashboard", "name": "Dashboard"},
+        {"path": "/settings", "name": "Settings"},
+    ]
+    prompt = build_routes_prompt(routes)
+    assert "/dashboard" in prompt
+    assert "/settings" in prompt
+
+
+def test_build_prefilter_prompt_contains_cluster_ids():
+    summaries = {"cluster_0": "Dashboard component showing metrics", "cluster_1": "HTTP utility functions"}
+    prompt = build_prefilter_prompt(summaries)
+    assert "cluster_0" in prompt
+    assert "cluster_1" in prompt

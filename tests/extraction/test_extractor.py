@@ -121,6 +121,29 @@ def test_multiple_clusters_total_count():
     assert result.total_clusters == 2
 
 
+def test_vue_sfc_content_prioritises_template(tmp_path):
+    vue_file = tmp_path / "MilestoneCard.vue"
+    vue_file.write_text(
+        "<template>\n  <div class='card'>Milestone: {{ name }}</div>\n</template>\n"
+        "<script setup>\nconst props = defineProps(['name'])\n</script>\n"
+    )
+    extractor = FeatureExtractor(llm_client=MagicMock(), model="gpt-4o")
+    content = extractor._extract_file_content(vue_file)
+    assert "Milestone" in content
+    assert "[template]" in content
+
+
+def test_non_vue_content_returns_first_60_lines(tmp_path):
+    ts_file = tmp_path / "service.ts"
+    lines = [f"line {i}" for i in range(100)]
+    ts_file.write_text("\n".join(lines))
+    extractor = FeatureExtractor(llm_client=MagicMock(), model="gpt-4o")
+    content = extractor._extract_file_content(ts_file)
+    assert "line 0" in content
+    assert "line 59" in content
+    assert "line 60" not in content
+
+
 def test_micro_clusters_merged_reduces_llm_calls():
     client = make_llm_client(VALID_RESPONSE)
     g = nx.Graph()
@@ -134,3 +157,54 @@ def test_micro_clusters_merged_reduces_llm_calls():
     assert result.total_clusters == 5
     call_count = client.chat.completions.create.call_count
     assert call_count < 5 + 1
+
+
+def test_project_context_injected_into_messages():
+    client = make_llm_client(VALID_RESPONSE)
+    extractor = FeatureExtractor(llm_client=client, model="gpt-4o")
+    extractor.extract(
+        make_clusters(),
+        make_graph(),
+        source="test",
+        project_context="This is a debt visualization tool",
+    )
+    calls = client.chat.completions.create.call_args_list
+    all_content = " ".join(
+        msg["content"]
+        for call in calls
+        for msg in call.kwargs.get("messages", [])
+    )
+    assert "debt visualization" in all_content
+
+
+def test_router_file_routes_are_detected(tmp_path):
+    router_file = tmp_path / "router.ts"
+    router_file.write_text(
+        "const routes = [\n"
+        "  { path: '/dashboard', component: Dashboard, name: 'Dashboard' },\n"
+        "  { path: '/reports', component: Reports, name: 'Reports' },\n"
+        "]\n"
+    )
+    extractor = FeatureExtractor(llm_client=MagicMock(), model="gpt-4o")
+    routes = extractor._extract_routes_from_files([router_file])
+    assert len(routes) >= 2
+    paths = [r["path"] for r in routes]
+    assert "/dashboard" in paths
+    assert "/reports" in paths
+
+
+def test_no_routes_when_no_router_file(tmp_path):
+    service_file = tmp_path / "service.ts"
+    service_file.write_text("export class MyService {}")
+    extractor = FeatureExtractor(llm_client=MagicMock(), model="gpt-4o")
+    routes = extractor._extract_routes_from_files([service_file])
+    assert routes == []
+
+
+def test_prefilter_falls_back_to_all_clusters_on_error():
+    client = MagicMock()
+    client.chat.completions.create.side_effect = Exception("network error")
+    extractor = FeatureExtractor(llm_client=client, model="gpt-4o")
+    summaries = {"cluster_a": "foo", "cluster_b": "bar"}
+    kept = extractor._prefilter_clusters(summaries)
+    assert set(kept) == {"cluster_a", "cluster_b"}
