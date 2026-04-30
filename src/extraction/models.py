@@ -30,6 +30,7 @@ class ExtractionResult(BaseModel):
     features: list[DigitalFeature]
     total_clusters: int = Field(ge=0)
     skipped_clusters: int = Field(ge=0)
+    project_summary: str | None = None
 
 
 class BusinessFeature(BaseModel):

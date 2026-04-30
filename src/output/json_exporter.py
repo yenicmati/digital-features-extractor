@@ -19,6 +19,8 @@ class JsonExporter:
             },
             "features": [f.model_dump() for f in sorted_features],
         }
+        if result.project_summary:
+            payload["project_summary"] = result.project_summary
         if grouping is not None:
             payload["business_features"] = [
                 {"id": bf.id, "name": bf.name, "description": bf.description,

@@ -15,6 +15,7 @@ from .prompts import (
     SYSTEM_PROMPT,
     build_cluster_prompt,
     build_prefilter_prompt,
+    build_project_summary_prompt,
     build_routes_prompt,
     build_summary_prompt,
     parse_llm_response,
@@ -277,11 +278,24 @@ class FeatureExtractor:
             except Exception as exc:
                 logger.warning("Route feature extraction failed: %s", exc)
 
+        project_summary: str | None = None
+        if final_features:
+            feature_dicts = [{"name": f.name, "description": f.description} for f in final_features]
+            summary_messages = [
+                {"role": "system", "content": "You are a concise technical writer summarizing a software product."},
+                {"role": "user", "content": build_project_summary_prompt(feature_dicts, project_context)},
+            ]
+            try:
+                project_summary = self._get_llm_response("__project_summary__", summary_messages).strip()
+            except Exception as exc:
+                logger.warning("Project summary generation failed: %s", exc)
+
         return ExtractionResult(
             source=source,
             features=final_features,
             total_clusters=total_clusters,
             skipped_clusters=skipped_clusters,
+            project_summary=project_summary,
         )
 
     def _deduplicate(

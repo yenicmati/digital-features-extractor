@@ -73,6 +73,7 @@ def test_cache_miss_calls_llm(tmp_path: Path):
 def test_cache_hit_skips_llm(tmp_path: Path):
     (tmp_path / "__micro_merged__.json").write_text(VALID_RESPONSE, encoding="utf-8")
     (tmp_path / "__summary__.json").write_text(VALID_RESPONSE, encoding="utf-8")
+    (tmp_path / "__project_summary__.json").write_text('"A tool for managing orders."', encoding="utf-8")
 
     client = make_llm_client(VALID_RESPONSE)
     extractor = FeatureExtractor(llm_client=client, model="gpt-4o", cache_dir=tmp_path)

@@ -9,163 +9,278 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #f4f6f9;
-      color: #333;
-      line-height: 1.5;
+      background: #f0f2f7;
+      color: #1e293b;
+      line-height: 1.55;
     }
 
     /* ── Header ─────────────────────────────────────────── */
     header {
-      background: #1a2236;
+      background: linear-gradient(135deg, #1a2236 0%, #243656 100%);
       color: #fff;
-      padding: 2rem 2.5rem;
+      padding: 2rem 2.5rem 1.8rem;
     }
-    header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: 0.02em; }
-    header .meta { margin-top: 0.4rem; font-size: 0.85rem; color: #94a3b8; }
-    header .meta span + span::before { content: " · "; }
+    header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.02em; }
+    header .meta { margin-top: 0.5rem; font-size: 0.82rem; color: #94a3b8; display: flex; flex-wrap: wrap; gap: 0 1.2rem; }
 
     /* ── Main wrapper ────────────────────────────────────── */
-    main { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+    main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    /* ── Project summary ─────────────────────────────────── */
+    .project-summary {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.4rem 1.8rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+      border-left: 5px solid #3b82f6;
+      font-size: 0.97rem;
+      color: #334155;
+      line-height: 1.7;
+    }
+    .project-summary strong {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #3b82f6;
+      margin-bottom: 0.5rem;
+    }
 
     /* ── Summary strip ───────────────────────────────────── */
     .summary {
       display: flex;
       flex-wrap: wrap;
       gap: 1rem;
-      margin-bottom: 2rem;
+      margin-bottom: 2.5rem;
     }
     .stat-card {
       background: #fff;
-      border-radius: 8px;
-      padding: 1rem 1.4rem;
-      flex: 1 1 140px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+      border-radius: 10px;
+      padding: 1rem 1.5rem;
+      flex: 1 1 130px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
       text-align: center;
     }
     .stat-card .value { font-size: 2rem; font-weight: 700; color: #1a2236; }
-    .stat-card .label { font-size: 0.78rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.2rem; }
+    .stat-card .label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.25rem; }
 
-    /* ── Section title ───────────────────────────────────── */
-    h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: #1a2236; }
+    /* ── Section heading ─────────────────────────────────── */
+    .section-heading {
+      font-size: 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 1.2rem;
+    }
 
-    /* ── Feature grid ────────────────────────────────────── */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 1.2rem;
+    /* ── Group accordion (<details>) ─────────────────────── */
+    .group-list { display: flex; flex-direction: column; gap: 0.9rem; }
+
+    details.group {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      overflow: hidden;
+    }
+
+    details.group[open] {
+      box-shadow: 0 4px 16px rgba(0,0,0,.11);
+    }
+
+    summary.group-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.2rem 1.5rem;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+      border-left: 5px solid var(--accent, #3b82f6);
+      transition: background 0.15s;
+    }
+    summary.group-header::-webkit-details-marker { display: none; }
+    summary.group-header:hover { background: #f8fafc; }
+
+    details.group[open] > summary.group-header { background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+
+    .group-chevron {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      color: #94a3b8;
+      transition: transform 0.2s;
+    }
+    details.group[open] .group-chevron { transform: rotate(90deg); }
+
+    .group-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--accent-light, #dbeafe);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .group-info { flex: 1; min-width: 0; }
+    .group-name { font-size: 1.05rem; font-weight: 700; color: #1a2236; }
+    .group-desc { font-size: 0.83rem; color: #64748b; margin-top: 0.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    details.group[open] .group-desc { white-space: normal; }
+
+    .group-badge {
+      flex-shrink: 0;
+      background: var(--accent-light, #dbeafe);
+      color: var(--accent, #3b82f6);
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.25em 0.75em;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    /* ── Feature cards inside group ──────────────────────── */
+    .group-body {
+      padding: 1.25rem 1.5rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
     }
 
     .feature-card {
-      background: #fff;
-      border-radius: 10px;
-      padding: 1.2rem 1.4rem;
-      box-shadow: 0 1px 4px rgba(0,0,0,.09);
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-      border-left: 4px solid #cbd5e1;
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      border-left: 3px solid var(--conf-color, #cbd5e1);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.3rem 1rem;
+      align-items: start;
     }
-    .feature-card.high   { border-left-color: #22c55e; }
-    .feature-card.medium { border-left-color: #f59e0b; }
-    .feature-card.low    { border-left-color: #ef4444; }
 
-    .feature-card h3 {
-      font-size: 1rem;
+    .feature-name {
+      font-size: 0.95rem;
       font-weight: 600;
       color: #1a2236;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 0.5rem;
+      grid-column: 1;
     }
 
     .confidence-badge {
+      grid-column: 2;
+      grid-row: 1 / 3;
+      align-self: center;
       font-size: 0.72rem;
       font-weight: 700;
-      padding: 0.2em 0.55em;
+      padding: 0.25em 0.65em;
       border-radius: 999px;
       white-space: nowrap;
-      flex-shrink: 0;
     }
-    .confidence-badge.high   { background: #dcfce7; color: #15803d; }
-    .confidence-badge.medium { background: #fef3c7; color: #b45309; }
-    .confidence-badge.low    { background: #fee2e2; color: #b91c1c; }
+    .conf-high   { --conf-color: #22c55e; background: #dcfce7; color: #15803d; }
+    .conf-medium { --conf-color: #f59e0b; background: #fef3c7; color: #b45309; }
+    .conf-low    { --conf-color: #ef4444; background: #fee2e2; color: #b91c1c; }
 
-    .feature-card .description { font-size: 0.88rem; color: #475569; }
+    .feature-desc {
+      grid-column: 1;
+      font-size: 0.84rem;
+      color: #475569;
+    }
 
-    .feature-card .user-value {
-      font-size: 0.82rem;
+    .feature-value {
+      grid-column: 1 / -1;
+      font-size: 0.80rem;
       color: #334155;
       font-style: italic;
       border-left: 2px solid #e2e8f0;
       padding-left: 0.6rem;
+      margin-top: 0.1rem;
     }
 
-    .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.2rem; }
-
+    .feature-tags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.25rem; }
     .tag {
-      font-size: 0.73rem;
-      padding: 0.2em 0.6em;
+      font-size: 0.71rem;
+      padding: 0.15em 0.55em;
       border-radius: 4px;
       font-weight: 500;
     }
     .tag-capability { background: #ede9fe; color: #5b21b6; }
+    .status-badge { display: inline-block; font-size: 0.71rem; padding: 0.15em 0.55em; border-radius: 4px; font-weight: 600; }
+    .status-live             { background: #d1fae5; color: #065f46; }
+    .status-to_be_developed  { background: #dbeafe; color: #1e40af; }
+    .status-deprecated       { background: #f3f4f6; color: #6b7280; }
+    .status-to_review        { background: #fef9c3; color: #854d0e; }
 
-    .status-badge {
-      font-size: 0.73rem;
-      padding: 0.2em 0.6em;
-      border-radius: 4px;
-      font-weight: 600;
-      display: inline-block;
+    /* ── Ungrouped features (flat grid fallback) ─────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.1rem;
+      margin-top: 1rem;
     }
-    .status-live        { background: #d1fae5; color: #065f46; }
-    .status-to_be_developed { background: #dbeafe; color: #1e40af; }
-    .status-deprecated  { background: #f3f4f6; color: #6b7280; }
-    .status-to_review   { background: #fef9c3; color: #854d0e; }
+    .features-grid .feature-card {
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,.07);
+    }
 
+    /* ── Footer ──────────────────────────────────────────── */
     footer {
       text-align: center;
-      font-size: 0.78rem;
+      font-size: 0.77rem;
       color: #94a3b8;
-      padding: 2rem 0 3rem;
+      padding: 1rem 0 2rem;
     }
 
-    .business-features { margin: 2rem 0; }
-    .business-features h2 { font-size: 1.5rem; margin-bottom: 0.25rem; }
-    .business-features .subtitle { color: #6b7280; margin-bottom: 1.5rem; }
-    .bf-card { background: #fff; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-    .bf-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
-    .bf-header h3 { margin: 0; font-size: 1.1rem; }
-    .bf-count { background: #eff6ff; color: #3b82f6; padding: 2px 10px; border-radius: 12px; font-size: .85rem; }
-    .bf-description { color: #374151; margin-bottom: 0.75rem; font-size: .95rem; }
-    .bf-features { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
-    .bf-features li { display: flex; align-items: center; gap: 0.4rem; background: #f9fafb; border-radius: 6px; padding: 4px 10px; font-size: .875rem; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-    .score { color: #9ca3af; font-size: .8rem; }
+    /* ── Colour palette per group index ─────────────────── */
+    .g0 { --accent: #3b82f6; --accent-light: #dbeafe; }
+    .g1 { --accent: #8b5cf6; --accent-light: #ede9fe; }
+    .g2 { --accent: #10b981; --accent-light: #d1fae5; }
+    .g3 { --accent: #f59e0b; --accent-light: #fef3c7; }
+    .g4 { --accent: #ef4444; --accent-light: #fee2e2; }
+    .g5 { --accent: #06b6d4; --accent-light: #cffafe; }
+    .g6 { --accent: #ec4899; --accent-light: #fce7f3; }
+    .g7 { --accent: #84cc16; --accent-light: #ecfccb; }
   </style>
 </head>
 <body>
 
 <header>
-  <h1>Digital Features Extractor — Report</h1>
+  <h1>Digital Features Report</h1>
   <div class="meta">
     {% if source %}<span>Source: <strong>{{ source }}</strong></span>{% endif %}
-    <span>Exported: {{ exported_at }}</span>
-    <span>Features: {{ features | length }}</span>
+    <span>{{ features | length }} features</span>
+    {% if grouping %}<span>{{ grouping.business_features | length }} capability groups</span>{% endif %}
+    <span>Avg confidence: {{ avg_confidence }}</span>
+    <span>{{ exported_at }}</span>
   </div>
 </header>
 
 <main>
 
+  {% if project_summary %}
+  <div class="project-summary">
+    <strong>Project overview</strong>
+    {{ project_summary }}
+  </div>
+  {% endif %}
+
   <!-- Summary stats -->
   <div class="summary">
     <div class="stat-card">
       <div class="value">{{ features | length }}</div>
-      <div class="label">Total Features</div>
+      <div class="label">Features</div>
     </div>
+    {% if grouping %}
+    <div class="stat-card">
+      <div class="value">{{ grouping.business_features | length }}</div>
+      <div class="label">Capability groups</div>
+    </div>
+    {% endif %}
     <div class="stat-card">
       <div class="value">{{ avg_confidence }}</div>
-      <div class="label">Avg Confidence</div>
+      <div class="label">Avg confidence</div>
     </div>
     {% for status_name, count in status_counts.items() %}
     <div class="stat-card">
@@ -175,46 +290,92 @@
     {% endfor %}
   </div>
 
+  {% set group_icons = ["🎯","🔍","📊","🚀","⚡","🗂️","🌐","🛠️"] %}
+
   {% if grouping and grouping.business_features %}
-  <section class="business-features">
-    <h2>Business Features</h2>
-    <p class="subtitle">{{ grouping.business_features|length }} capability groups identified</p>
+  <p class="section-heading">Capability groups</p>
+  <div class="group-list">
     {% for bf in grouping.business_features %}
-    <div class="bf-card">
-      <div class="bf-header">
-        <h3>{{ bf.name }}</h3>
-        <span class="bf-count">{{ bf.digital_features|length }} features</span>
-      </div>
-      <p class="bf-description">{{ bf.description }}</p>
-      <ul class="bf-features">
-        {% for f in bf.digital_features %}
-        <li>
-          <span class="dot" style="background:{{ '#22c55e' if f.confidence_score >= 0.7 else '#f59e0b' }}"></span>
-          {{ f.name }}
-          <span class="score">{{ (f.confidence_score * 100)|int }}%</span>
-        </li>
+    {% set gi = loop.index0 % 8 %}
+    <details class="group g{{ gi }}" {% if loop.first %}open{% endif %}>
+      <summary class="group-header">
+        <!-- chevron -->
+        <svg class="group-chevron" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+        </svg>
+        <div class="group-icon">{{ group_icons[gi] }}</div>
+        <div class="group-info">
+          <div class="group-name">{{ bf.name }}</div>
+          <div class="group-desc">{{ bf.description }}</div>
+        </div>
+        <span class="group-badge">{{ bf.digital_features | length }} feature{{ 's' if bf.digital_features | length != 1 }}</span>
+      </summary>
+
+      <div class="group-body">
+        {% for f in bf.digital_features | sort(attribute='confidence_score', reverse=True) %}
+        {% set cc = "conf-high" if f.confidence_score >= 0.7 else ("conf-medium" if f.confidence_score >= 0.4 else "conf-low") %}
+        <div class="feature-card {{ cc }}">
+          <div class="feature-name">{{ f.name }}</div>
+          <span class="confidence-badge {{ cc }}">{{ "%.0f"|format(f.confidence_score * 100) }}%</span>
+          <div class="feature-desc">{{ f.description }}</div>
+          {% if f.user_value is defined and f.user_value %}
+          <div class="feature-value">{{ f.user_value }}</div>
+          {% endif %}
+          <div class="feature-tags">
+            {% if f.business_capability_hint %}
+            <span class="tag tag-capability">{{ f.business_capability_hint }}</span>
+            {% endif %}
+            <span class="status-badge status-{{ f.status.value | lower | replace(' ', '_') }}">{{ f.status.value }}</span>
+          </div>
+        </div>
         {% endfor %}
-      </ul>
-    </div>
+      </div>
+    </details>
     {% endfor %}
-  </section>
+  </div>
   {% endif %}
 
-  <!-- Feature cards -->
-  <h2>Features</h2>
+  {% if grouping and grouping.ungrouped_feature_ids %}
+  {% set ungrouped = features | selectattr('id', 'in', grouping.ungrouped_feature_ids) | list %}
+  {% if ungrouped %}
+  <div style="margin-top: 2.5rem;">
+    <p class="section-heading">Other features</p>
+    <div class="features-grid">
+      {% for f in ungrouped %}
+      {% set cc = "conf-high" if f.confidence_score >= 0.7 else ("conf-medium" if f.confidence_score >= 0.4 else "conf-low") %}
+      <div class="feature-card {{ cc }}">
+        <div class="feature-name">{{ f.name }}</div>
+        <span class="confidence-badge {{ cc }}">{{ "%.0f"|format(f.confidence_score * 100) }}%</span>
+        <div class="feature-desc">{{ f.description }}</div>
+        {% if f.user_value is defined and f.user_value %}
+        <div class="feature-value">{{ f.user_value }}</div>
+        {% endif %}
+        <div class="feature-tags">
+          {% if f.business_capability_hint %}
+          <span class="tag tag-capability">{{ f.business_capability_hint }}</span>
+          {% endif %}
+          <span class="status-badge status-{{ f.status.value | lower | replace(' ', '_') }}">{{ f.status.value }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  {% if not grouping %}
+  <p class="section-heading">All features</p>
   <div class="features-grid">
     {% for f in features %}
-    {% set conf_class = "high" if f.confidence_score >= 0.7 else ("medium" if f.confidence_score >= 0.4 else "low") %}
-    <div class="feature-card {{ conf_class }}">
-      <h3>
-        {{ f.name }}
-        <span class="confidence-badge {{ conf_class }}">{{ "%.0f"|format(f.confidence_score * 100) }}%</span>
-      </h3>
-      <p class="description">{{ f.description }}</p>
+    {% set cc = "conf-high" if f.confidence_score >= 0.7 else ("conf-medium" if f.confidence_score >= 0.4 else "conf-low") %}
+    <div class="feature-card {{ cc }}">
+      <div class="feature-name">{{ f.name }}</div>
+      <span class="confidence-badge {{ cc }}">{{ "%.0f"|format(f.confidence_score * 100) }}%</span>
+      <div class="feature-desc">{{ f.description }}</div>
       {% if f.user_value is defined and f.user_value %}
-      <p class="user-value">{{ f.user_value }}</p>
+      <div class="feature-value">{{ f.user_value }}</div>
       {% endif %}
-      <div class="tags">
+      <div class="feature-tags">
         {% if f.business_capability_hint %}
         <span class="tag tag-capability">{{ f.business_capability_hint }}</span>
         {% endif %}
@@ -223,6 +384,7 @@
     </div>
     {% endfor %}
   </div>
+  {% endif %}
 
 </main>
 

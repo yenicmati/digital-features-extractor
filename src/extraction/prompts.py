@@ -188,3 +188,19 @@ def build_prefilter_prompt(summaries: dict[str, str]) -> str:
         f"Clusters:\n{lines}\n\n"
         "Return ONLY a JSON array of cluster_id strings to keep."
     )
+
+
+def build_project_summary_prompt(features: list[dict], project_context: str | None) -> str:
+    feature_names = "\n".join(f"  - {f.get('name', '')}" for f in features[:20])
+    context_block = f"\n\nProject context:\n{project_context}" if project_context else ""
+    return (
+        "Based on the digital features extracted from this codebase, write a project summary "
+        "of EXACTLY 3 sentences maximum.{context_block}\n\n"
+        "Extracted features:\n{feature_names}\n\n"
+        "Rules:\n"
+        "- Sentence 1: what the product IS (domain + target users)\n"
+        "- Sentence 2: what it enables users to DO (key capabilities)\n"
+        "- Sentence 3: the main value it delivers (outcome/benefit)\n"
+        "- Write in plain English, no bullet points, no markdown\n"
+        "- Return ONLY the 3 sentences, nothing else"
+    ).format(context_block=context_block, feature_names=feature_names)

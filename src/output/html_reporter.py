@@ -52,6 +52,7 @@ class HtmlReporter:
             avg_confidence=avg_confidence,
             status_counts=status_counts,
             grouping=grouping,
+            project_summary=result.project_summary,
         )
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
